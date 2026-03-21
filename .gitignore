@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+
+# Node
+costo-web/node_modules/
+costo-web/.env
+costo-web/dist/
+
+# Excel/Data
+*.xlsx~
+*.txt~
+
+# OS
+.DS_Store
+Thumbs.db
