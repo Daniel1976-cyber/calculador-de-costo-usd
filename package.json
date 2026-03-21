@@ -1,6 +1,6 @@
 {
   "scripts": {
     "install": "cd costo-web && npm install",
-    "build": "cd costo-web && npm run build"
+    "build": "cd costo-web && npm run build && mv dist ../dist"
   }
 }
