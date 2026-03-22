@@ -9,6 +9,7 @@ function App() {
   const [productos, setProductos] = useState(INITIAL_PRODUCTS);
   const [seleccionados, setSeleccionados] = useState([]);
   const [precioVenta, setPrecioVenta] = useState('');
+  const [tituloInforme, setTituloInforme] = useState('');
   const [reporte, setReporte] = useState(null);
   
   // Estado para el modal de cantidad (Modo Libre)
@@ -17,6 +18,8 @@ function App() {
 
   // Calcular costo total
   const costoTotal = seleccionados.reduce((acc, item) => acc + item.costoTotalLinea, 0);
+  const costoUsdTotal = seleccionados.reduce((acc, item) => acc + (item.costo_usd || 0), 0);
+  const precioTotalMenu = seleccionados.reduce((acc, item) => acc + (item.precio_item_total || 0), 0);
 
   const agregarProducto = (producto) => {
     // Modo libre: Abrir modal para pedir cantidad
@@ -34,7 +37,9 @@ function App() {
     const nuevoItem = {
       ...productoActual,
       cantidadUsada: cantidad,
-      costoTotalLinea: productoActual.precio * cantidad
+      costoTotalLinea: productoActual.precio * cantidad,
+      costo_usd: (productoActual.precio_usd || 0) * cantidad,
+      precio_item_total: (((productoActual.precio_usd || 0) * 120) + (productoActual.precio_cup || 0)) * cantidad
     };
 
     setSeleccionados([...seleccionados, nuevoItem]);
@@ -57,14 +62,23 @@ function App() {
       alert("Ingresa un precio de venta válido mayor a 0.");
       return;
     }
+    if (!tituloInforme.trim()) {
+      alert("Por favor ingresa un título para el informe (ej: pescado frito).");
+      return;
+    }
 
     const costoPorPeso = costoTotal / precio;
+    const porcentajeUsd = precioTotalMenu > 0 ? (costoUsdTotal * 120) / precioTotalMenu : 0;
     
     setReporte({
+      titulo: tituloInforme,
       fecha: new Date().toLocaleString(),
       modo: 'Menú Libre',
       items: [...seleccionados],
       costoTotal: costoTotal,
+      costoUsdTotal: costoUsdTotal,
+      precioTotalMenu: precioTotalMenu,
+      porcentajeUsd: porcentajeUsd,
       precioVenta: precio,
       costoPorPeso: costoPorPeso
     });
@@ -73,33 +87,50 @@ function App() {
   const reiniciarCalculo = () => {
     setSeleccionados([]);
     setPrecioVenta('');
+    setTituloInforme('');
     setReporte(null);
   };
 
   const descargarTXT = () => {
     if (!reporte) return;
     
-    let contenido = `==== REPORTE DE COSTO ====\n`;
-    contenido += `Fecha: ${reporte.fecha}\n`;
-    contenido += `Modo: ${reporte.modo}\n`;
-    contenido += `--------------------------\n`;
+    let contenido = `Título del informe: ${reporte.titulo}\n`;
+    contenido += `==================================================\n`;
+    contenido += `Menú libre:\n`;
+    contenido += `------------------------------------------------------------------------------------------\n`;
+    contenido += `Código          Producto                                 Precio MT  Precio CUP  Precio USD\n`;
+    contenido += `------------------------------------------------------------------------------------------\n`;
     
     reporte.items.forEach(item => {
-      contenido += `- ${item.nombre}\n`;
-      contenido += `  Precio U.: $${item.precio.toFixed(2)} | Cant.: ${item.cantidadUsada} | Costo: $${item.costoTotalLinea.toFixed(2)}\n`;
+      const codigoFormat = (item.id || '').padEnd(15, ' ');
+      const nombreLimpio = typeof item.nombre === 'string' ? item.nombre.trim() : '';
+      const nombreStr = nombreLimpio.length > 40 ? nombreLimpio.substring(0, 38) + '..' : nombreLimpio;
+      const nombreFormat = nombreStr.padEnd(40, ' ');
+      const precioMt = (item.precio || 0).toFixed(2).padStart(10, ' ');
+      const precioCup = (item.precio_cup || 0).toFixed(2).padStart(10, ' ');
+      const precioUsd = (item.precio_usd || 0).toFixed(2).padStart(12, ' ');
+      
+      contenido += `${codigoFormat} ${nombreFormat} ${precioMt} ${precioCup} ${precioUsd}\n`;
     });
     
-    contenido += `--------------------------\n`;
-    contenido += `Costo Total: $${reporte.costoTotal.toFixed(2)}\n`;
-    contenido += `Precio de Venta: $${reporte.precioVenta.toFixed(2)}\n`;
-    contenido += `Costo Real (%): ${(reporte.costoPorPeso * 100).toFixed(2)}%\n`;
-    contenido += `==========================\n`;
+    contenido += `------------------------------------------------------------------------------------------\n`;
+    contenido += `Costo total del menú libre: ${reporte.costoTotal.toFixed(2)}\n`;
+    contenido += `Costo total en USD: ${reporte.costoUsdTotal.toFixed(2)}\n`;
+    contenido += `Porcentaje USD del precio: ${(reporte.porcentajeUsd * 100).toFixed(2)}%\n`;
+    contenido += `Precio de venta: ${reporte.precioVenta.toFixed(2)}\n`;
+    contenido += `Costo por peso: ${reporte.costoPorPeso.toFixed(4)} (${(reporte.costoPorPeso * 100).toFixed(2)}%)\n`;
+    contenido += `==================================================\n\n`;
 
-    const blob = new Blob([contenido], { type: 'text/plain' });
+    const safeTitulo = reporte.titulo.replace(/[^a-zA-Z0-9 _]/g, '').replace(/ /g, '_') || 'reporte';
+    const d = new Date();
+    const pad = (n) => n < 10 ? '0' + n : n;
+    const timestamp = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+
+    const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Reporte_Costo_${new Date().getTime()}.txt`;
+    link.download = `reporte_${safeTitulo}_${timestamp}.txt`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -238,6 +269,15 @@ function App() {
               
               <div className="space-y-3">
                 <div className="relative">
+                  <input 
+                    type="text" 
+                    placeholder="Título del Informe" 
+                    value={tituloInforme}
+                    onChange={(e) => setTituloInforme(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
+                  />
+                </div>
+                <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">$</span>
                   <input 
                     type="number" 
@@ -316,6 +356,17 @@ function App() {
                 <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
                   <p className="text-xs text-slate-500 uppercase font-semibold">Precio Venta</p>
                   <p className="text-xl font-bold">${reporte.precioVenta.toFixed(2)}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
+                  <p className="text-xs text-slate-500 uppercase font-semibold">Costo USD</p>
+                  <p className="text-xl font-bold">${reporte.costoUsdTotal.toFixed(2)}</p>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
+                  <p className="text-xs text-slate-500 uppercase font-semibold">% USD del Precio</p>
+                  <p className="text-xl font-bold">{(reporte.porcentajeUsd * 100).toFixed(1)}%</p>
                 </div>
               </div>
               
