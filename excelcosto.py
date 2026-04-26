@@ -322,11 +322,55 @@ class MenuCostApp:
         lineas.append("=" * 50)
         lineas.append("")
 
-        # Escribir el archivo
+        # Escribir el archivo TXT y el Excel
         try:
             with open(nombre_archivo, 'w', encoding='utf-8') as f:
                 f.write("\n".join(lineas))
-            messagebox.showinfo("Reporte generado", f"El informe se ha guardado en: {nombre_archivo}\n\n¡Gracias por usar el Calculador de Costo de Menú!\nSi desea realizar otra consulta, por favor reinicie el programa.\nPara cerrar, simplemente cierre la ventana principal.")
+                
+            # --- Generar reporte EXCEL basado en anexo_1.xlsx ---
+            nombre_archivo_excel = f"reporte_{safe_titulo}_{timestamp}.xlsx"
+            import openpyxl
+            try:
+                wb = openpyxl.load_workbook('anexo_1.xlsx')
+                sheet = wb.active
+                
+                sheet['B6'] = titulo
+                sheet['E7'] = 1
+                
+                row_idx = 11
+                for i, item in enumerate(menu_items):
+                    # item: (Código, Producto, Precio(MT), Precio_CUP, Precio_USD, Cantidad, Costo_racion)
+                    if row_idx > 24: # La plantilla solo admite hasta la fila 24
+                        break
+                    sheet.cell(row=row_idx, column=2, value=i+1) # Indice
+                    sheet.cell(row=row_idx, column=3, value=item[1]) # Producto
+                    sheet.cell(row=row_idx, column=4, value="U") # U/M
+                    sheet.cell(row=row_idx, column=5, value=float(item[5])) # Bruto (Cantidad)
+                    sheet.cell(row=row_idx, column=6, value=0) # Neto
+                    sheet.cell(row=row_idx, column=7, value=float(item[2])) # Precio de Costo (MT)
+                    sheet.cell(row=row_idx, column=8, value=float(item[6])) # Importe Costo (MT * Cantidad)
+                    row_idx += 1
+                
+                # Limpiar las filas restantes de ingredientes en la plantilla (hasta la 24)
+                while row_idx <= 24:
+                    sheet.cell(row=row_idx, column=2, value="")
+                    sheet.cell(row=row_idx, column=3, value="")
+                    sheet.cell(row=row_idx, column=4, value="")
+                    sheet.cell(row=row_idx, column=5, value="")
+                    sheet.cell(row=row_idx, column=6, value="")
+                    sheet.cell(row=row_idx, column=7, value="")
+                    sheet.cell(row=row_idx, column=8, value="")
+                    row_idx += 1
+                
+                # Poner el precio de venta en E32 (PRECIO SIN IMPUESTO)
+                sheet['E32'] = precio_venta
+                
+                wb.save(nombre_archivo_excel)
+                
+                messagebox.showinfo("Reportes generados", f"Se han guardado los informes:\n- TXT: {nombre_archivo}\n- Excel: {nombre_archivo_excel}\n\n¡Gracias por usar el Calculador de Costo de Menú!")
+            except Exception as e:
+                messagebox.showerror("Error Excel", f"No se pudo generar el Excel: {e}")
+                
         except Exception as e:
             messagebox.showerror("Error al guardar", f"No se pudo guardar el informe: {e}")
 
