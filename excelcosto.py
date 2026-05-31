@@ -22,9 +22,6 @@ class MenuCostApp:
         # Cargar datos del Excel
         self.cargar_datos()
 
-        # Preguntar al usuario el modo de cálculo
-        self.preguntar_modo()
-
         # Crear interfaz
         self.crear_widgets()
 
