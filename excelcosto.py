@@ -22,9 +22,6 @@ class MenuCostApp:
         # Cargar datos del Excel
         self.cargar_datos()
 
-        # Preguntar al usuario el modo de cálculo
-        self.preguntar_modo()
-
         # Crear interfaz
         self.crear_widgets()
 
@@ -68,13 +65,26 @@ class MenuCostApp:
             return
 
     def preguntar_modo(self):
-        """Establece el modo de cálculo a menú libre (único modo disponible)."""
-        self.modo = 'libre'
-        messagebox.showinfo(
-            "Modo de cálculo",
-            "Se utilizará el modo de cálculo: Menú Libre\n"
-            "(puede especificar cantidad para cada producto)"
+        """Solicita al usuario el modo de cálculo (libre o buffet)."""
+        # Preguntar al usuario mediante un cuadro de diálogo simple
+        opciones = ['libre', 'buffet']
+        modo_elegido = simpledialog.askstring(
+            "Seleccionar modo",
+            f"Elija el modo de cálculo ({'/'.join(opciones)}):",
         )
+        if modo_elegido is None or modo_elegido.lower() not in opciones:
+            # Si el usuario cancela o escribe algo inválido, usar modo libre por defecto
+            self.modo = 'libre'
+            messagebox.showinfo(
+                "Modo de cálculo",
+                "Modo no válido o cancelado. Se utilizará el modo: Menú Libre"
+            )
+        else:
+            self.modo = modo_elegido.lower()
+            messagebox.showinfo(
+                "Modo de cálculo",
+                f"Se utilizará el modo de cálculo: {self.modo.title()}"
+            )
 
     def crear_widgets(self):
         # Frame izquierdo: lista de productos
