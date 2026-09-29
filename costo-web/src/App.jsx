@@ -198,7 +198,9 @@ function App() {
             
             <div className="overflow-y-auto flex-1 p-2">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {productos.map(p => (
+                {[...productos]
+                  .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+                  .map(p => (
                   <button 
                     key={p.id}
                     onClick={() => agregarProducto(p)}
