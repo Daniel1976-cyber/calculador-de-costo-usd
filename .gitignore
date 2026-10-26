@@ -11,6 +11,10 @@ env/
 costo-web/node_modules/
 costo-web/.env
 costo-web/dist/
+.env
+.env.*
+!.env.example
+dist/
 
 # Excel/Data
 *.xlsx~
