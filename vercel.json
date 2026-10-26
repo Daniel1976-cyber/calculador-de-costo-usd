@@ -1,8 +1,16 @@
 {
   "outputDirectory": "dist",
+  "functions": {
+    "api/productos.js": {
+      "includeFiles": "{lib/**,costo-web/src/data.json}"
+    },
+    "api/calcular.js": {
+      "includeFiles": "{lib/**,costo-web/src/data.json,costo-web/src/lib/calcular.js}"
+    }
+  },
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
   ]

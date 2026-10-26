@@ -1,6 +1,8 @@
 {
+  "type": "module",
   "scripts": {
     "install": "cd costo-web && npm install",
-    "build": "cd costo-web && npm run build && mv dist ../dist"
+    "build": "cd costo-web && npm run build && node ../scripts/move-dist.mjs",
+    "test:api": "node scripts/test-api-parity.mjs && node scripts/test-api-auth.mjs"
   }
 }

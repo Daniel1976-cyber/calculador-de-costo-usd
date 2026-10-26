@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Calculator, Plus, Trash2, Download, RefreshCw, X, Receipt } from 'lucide-react';
 
 import INITIAL_PRODUCTS from './data.json';
+import { calcularLinea, calcularTotales, calcularReporte } from './lib/calcular.js';
 
 
 function App() {
@@ -16,10 +17,8 @@ function App() {
   const [productoActual, setProductoActual] = useState(null);
   const [cantidadInput, setCantidadInput] = useState('1');
 
-  // Calcular costo total
-  const costoTotal = seleccionados.reduce((acc, item) => acc + item.costoTotalLinea, 0);
-  const costoUsdTotal = seleccionados.reduce((acc, item) => acc + (item.costo_usd || 0), 0);
-  const precioTotalMenu = seleccionados.reduce((acc, item) => acc + (item.precio_item_total || 0), 0);
+  // Calcular costo total (mismas fórmulas vía módulo compartido)
+  const { costoTotal, costoUsdTotal, precioTotalMenu } = calcularTotales(seleccionados);
 
   const agregarProducto = (producto) => {
     // Modo libre: Abrir modal para pedir cantidad
@@ -36,10 +35,7 @@ function App() {
 
     const nuevoItem = {
       ...productoActual,
-      cantidadUsada: cantidad,
-      costoTotalLinea: productoActual.precio * cantidad,
-      costo_usd: (productoActual.precio_usd || 0) * cantidad,
-      precio_item_total: (((productoActual.precio_usd || 0) * 120) + (productoActual.precio_cup || 0)) * cantidad
+      ...calcularLinea(productoActual, cantidad),
     };
 
     setSeleccionados([...seleccionados, nuevoItem]);
@@ -67,21 +63,13 @@ function App() {
       return;
     }
 
-    const costoPorPeso = costoTotal / precio;
-    const porcentajeUsd = precioTotalMenu > 0 ? (costoUsdTotal * 120) / precioTotalMenu : 0;
-    
-    setReporte({
-      titulo: tituloInforme,
-      fecha: new Date().toLocaleString(),
-      modo: 'Menú Libre',
-      items: [...seleccionados],
-      costoTotal: costoTotal,
-      costoUsdTotal: costoUsdTotal,
-      precioTotalMenu: precioTotalMenu,
-      porcentajeUsd: porcentajeUsd,
-      precioVenta: precio,
-      costoPorPeso: costoPorPeso
-    });
+    setReporte(
+      calcularReporte({
+        items: seleccionados,
+        precioVenta: precio,
+        titulo: tituloInforme,
+      })
+    );
   };
 
   const reiniciarCalculo = () => {
