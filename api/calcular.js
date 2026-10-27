@@ -68,8 +68,12 @@ export default async function handler(req, res) {
     return;
   }
 
-  const precioVenta = Number(body.precioVenta);
-  if (!Number.isFinite(precioVenta) || precioVenta <= 0) {
+  const precioVenta = body.precioVenta;
+  if (
+    typeof precioVenta !== 'number' ||
+    !Number.isFinite(precioVenta) ||
+    precioVenta <= 0
+  ) {
     sendJson(res, 400, {
       error: 'bad_request',
       message: 'precioVenta debe ser un número mayor que 0',
@@ -97,7 +101,7 @@ export default async function handler(req, res) {
       return;
     }
 
-    const id = raw.id != null ? String(raw.id) : '';
+    const id = typeof raw.id === 'string' ? raw.id.trim() : '';
     if (!id) {
       sendJson(res, 400, {
         error: 'bad_request',
@@ -106,8 +110,12 @@ export default async function handler(req, res) {
       return;
     }
 
-    const cantidad = Number(raw.cantidad);
-    if (!Number.isFinite(cantidad) || cantidad <= 0) {
+    const cantidad = raw.cantidad;
+    if (
+      typeof cantidad !== 'number' ||
+      !Number.isFinite(cantidad) ||
+      cantidad <= 0
+    ) {
       sendJson(res, 400, {
         error: 'bad_request',
         message: 'cantidad debe ser un número mayor que 0',

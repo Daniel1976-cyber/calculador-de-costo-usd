@@ -1,0 +1,372 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Calculadora de costos",
+    "version": "1.0.0",
+    "description": "Consulta el catálogo y solicita cálculos a la calculadora. Los precios se obtienen del catálogo del servidor; no envíes precios en la solicitud."
+  },
+  "servers": [
+    {
+      "url": "https://calculador-de-costo-usd.vercel.app"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/productos": {
+      "get": {
+        "operationId": "buscarProductos",
+        "summary": "Buscar productos del catálogo",
+        "description": "Busca productos por nombre o identificador. Sin el parámetro q, devuelve el catálogo completo.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Texto que se buscará en el nombre o identificador del producto.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Productos encontrados.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductosResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/calcular": {
+      "post": {
+        "operationId": "calcularReporte",
+        "summary": "Calcular costos de una preparación",
+        "description": "Envía el título, el precio de venta y los productos con sus cantidades. Usa buscarProductos antes para obtener identificadores válidos. La calculadora busca los precios del catálogo del servidor e ignora cualquier precio enviado por el cliente. No calcula ganancias ni márgenes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalcularRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reporte calculado por la aplicación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Reporte"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "API key",
+        "description": "Introduce la clave configurada como CALCULADORA_API_KEY en el servidor. No pongas la clave en este archivo."
+      }
+    },
+    "schemas": {
+      "Producto": {
+        "type": "object",
+        "required": [
+          "id",
+          "nombre",
+          "precio",
+          "precio_cup",
+          "precio_usd",
+          "unidad"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "precio": {
+            "type": "number"
+          },
+          "precio_cup": {
+            "type": "number"
+          },
+          "precio_usd": {
+            "type": "number"
+          },
+          "unidad": {
+            "type": "string"
+          }
+        }
+      },
+      "ProductosResponse": {
+        "type": "object",
+        "required": [
+          "productos",
+          "total"
+        ],
+        "properties": {
+          "productos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Producto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "CalcularRequest": {
+        "type": "object",
+        "required": [
+          "titulo",
+          "precioVenta",
+          "items"
+        ],
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "minLength": 1
+          },
+          "precioVenta": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/IngredienteRequest"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "IngredienteRequest": {
+        "type": "object",
+        "required": [
+          "id",
+          "cantidad"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "cantidad": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          }
+        },
+        "additionalProperties": true,
+        "description": "Solo se usan id y cantidad. Si llegan otros campos, incluidos precios, el servidor los ignora."
+      },
+      "IngredienteCalculado": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Producto"
+          },
+          {
+            "type": "object",
+            "required": [
+              "cantidadUsada",
+              "costoTotalLinea",
+              "costo_usd",
+              "precio_item_total"
+            ],
+            "properties": {
+              "cantidadUsada": {
+                "type": "number"
+              },
+              "costoTotalLinea": {
+                "type": "number"
+              },
+              "costo_usd": {
+                "type": "number"
+              },
+              "precio_item_total": {
+                "type": "number"
+              }
+            }
+          }
+        ]
+      },
+      "Reporte": {
+        "type": "object",
+        "required": [
+          "titulo",
+          "fecha",
+          "modo",
+          "items",
+          "costoTotal",
+          "costoUsdTotal",
+          "precioTotalMenu",
+          "porcentajeUsd",
+          "precioVenta",
+          "costoPorPeso"
+        ],
+        "properties": {
+          "titulo": {
+            "type": "string"
+          },
+          "fecha": {
+            "type": "string"
+          },
+          "modo": {
+            "type": "string",
+            "const": "Menú Libre"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IngredienteCalculado"
+            }
+          },
+          "costoTotal": {
+            "type": "number"
+          },
+          "costoUsdTotal": {
+            "type": "number"
+          },
+          "precioTotalMenu": {
+            "type": "number"
+          },
+          "porcentajeUsd": {
+            "type": "number"
+          },
+          "precioVenta": {
+            "type": "number"
+          },
+          "costoPorPeso": {
+            "type": "number",
+            "description": "Ratio costoTotal / precioVenta; no representa costo por kilogramo físico."
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "error",
+          "message"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Solicitud o JSON inválidos.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Falta la clave o no es válida.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "El identificador de producto no existe en el catálogo.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "MethodNotAllowed": {
+        "description": "Método HTTP no admitido.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "PayloadTooLarge": {
+        "description": "El cuerpo de la solicitud supera el tamaño permitido.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "ServerError": {
+        "description": "La clave del servidor no está configurada o ocurrió un error interno.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    }
+  }
+}
