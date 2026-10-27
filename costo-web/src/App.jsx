@@ -3,6 +3,7 @@ import { ShoppingCart, Calculator, Plus, Trash2, Download, RefreshCw, X, Receipt
 
 import INITIAL_PRODUCTS from './data.json';
 import { calcularLinea, calcularTotales, calcularReporte } from './lib/calcular.js';
+import ChatAssistant from './ChatAssistant.jsx';
 
 
 function App() {
@@ -129,6 +130,7 @@ function App() {
   if (mostrarInicio) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex flex-col items-center justify-center p-4">
+        <ChatAssistant />
         <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden">
           <div className="bg-emerald-600 p-6 text-center text-white">
             <Calculator className="w-16 h-16 mx-auto mb-4 opacity-90" />
@@ -393,6 +395,7 @@ function App() {
         </div>
       )}
 
+      <ChatAssistant />
     </div>
   );
 }

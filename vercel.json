@@ -6,6 +6,9 @@
     },
     "api/calcular.js": {
       "includeFiles": "{lib/**,costo-web/src/data.json,costo-web/src/lib/calcular.js}"
+    },
+    "api/chat.js": {
+      "includeFiles": "{api/calcular.js,api/productos.js,lib/**,costo-web/src/data.json,costo-web/src/lib/calcular.js}"
     }
   },
   "rewrites": [
